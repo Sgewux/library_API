@@ -6,7 +6,7 @@ Base = declarative_base()
 
 class AllBooksInfo(Base):
     '''
-    View that represents a join betwen:
+    SQL View that represents a join betwen:
         - Books
         - Authors
         - Categories
