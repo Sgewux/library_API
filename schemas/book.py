@@ -16,5 +16,8 @@ class BookOut(BaseModel):
     location: BookLocation
 
 
-
-
+class BookIn(BaseModel):
+    book_name: str = Field(..., max_length=20)
+    shelf_row_number: int = Field(..., gt=0, le=10)
+    category_id: int = Field(...)
+    author_id: int = Field(...)

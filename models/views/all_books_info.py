@@ -2,7 +2,7 @@ from sqlalchemy import Column
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.types import Integer, String, Enum
 
-Base = declarative_base()
+from config.db import Base
 
 class AllBooksInfo(Base):
     '''
