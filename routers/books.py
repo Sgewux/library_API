@@ -13,7 +13,7 @@ from models.views.all_books_info import AllBooksInfo
 from schemas.book import BookIn, BookOut, BookLocation
 
 
-router = APIRouter(tags=['books'])
+router = APIRouter(tags=['Books'])
 
 @router.get('/books', response_model=List[BookOut])
 def get_books(

@@ -1,5 +1,9 @@
 from enum import Enum
 
 class Gender(Enum):
-    male = 'MALE'
-    female = 'FEMALE'
+    MALE = 'MALE'
+    FEMALE = 'FEMALE'
+
+class SubscriberStatus(Enum):
+    ACTIVE = 'ACTIVE'
+    INACTIVE = 'INACTIVE'
