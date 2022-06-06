@@ -1,10 +1,12 @@
 from typing import List
-from unittest import result
 
-from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError
+from psycopg2.errors import UniqueViolation
+from fastapi.responses import RedirectResponse
 from fastapi import APIRouter, Path, Query, Body, HTTPException
 
-from config.db import session, engine
+
+from config.db import session
 from models.subscriber import Subscriber
 from schemas.subscriber import SubscriberIn, SubscriberOut
 
@@ -13,16 +15,33 @@ router = APIRouter(tags=['Subscribers'])
 
 @router.post('/subscribers', response_model=SubscriberOut, status_code=201)
 def add_subscriber(new_subscriber: SubscriberIn = Body(...)):
-    pass
-    # sql = text(f'INSERT INTO \
-    #     subscribers(id, first_name, second_name, first_lastname, second_lastname, adress, phone_number, gender)\
-    #     VALUES ({new_subscriber.id}, {new_subscriber.first_name}, null,\
-    #             {new_subscriber.first_lastname}, {new_subscriber.second_lastname},\
-    #             {new_subscriber.adress}, {new_subscriber.phone_number}, {new_subscriber.gender})\
-    #     ON CONFLICT(id) DO UPDATE\
-    #     SET adress={new_subscriber.adress}, phone_number={new_subscriber.phone_number}, status=ACTIVE')
+    subscriber = Subscriber(
+        id = new_subscriber.id,
+        first_name = new_subscriber.first_name,
+        second_name = new_subscriber.second_name,
+        first_lastname = new_subscriber.first_lastname,
+        second_lastname = new_subscriber.second_lastname,
+        adress = new_subscriber.adress,
+        phone_number = new_subscriber.phone_number,
+        gender = new_subscriber.gender.value
+    )
+
+    try:
+        session.add(subscriber)
+        session.commit()
+        session.refresh(subscriber)
+
+        return RedirectResponse(f'/subscribers/{subscriber.id}', status_code=303)
     
-    # engine.execute(sql)
+    except IntegrityError as e:
+        session.rollback()
+        postgres_error = e.orig
+
+        if type(postgres_error) == UniqueViolation:
+            raise HTTPException(
+                status_code=400,
+                detail=f'Phone number {subscriber.phone_number} is an already used phone number'
+            )
 
 
 @router.get('/subscribers', response_model=List[SubscriberOut])
@@ -78,10 +97,12 @@ def get_subscriber(subscriber_id: int = Path(..., gt=0)):
             )
 
 
+@router.put('/subscibers/{subscriber_id}')
+def update_subscriber(subscriber_id: int = Path(..., gt=0), b: SubscriberIn.exclude('id') = Body(...)):
+    pass
+
+
 @router.delete('/subscibers/{subscriber_id}')
 def delete_subscriber(subscriber_id: int = Path(..., gt=0)):
     session.query(Subscriber).filter(Subscriber.id == subscriber_id).delete()
     session.commit()
-
-
-
