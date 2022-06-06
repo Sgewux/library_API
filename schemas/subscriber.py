@@ -1,4 +1,6 @@
-from pydantic import BaseModel, Field
+from typing import Iterable
+
+from pydantic import BaseModel, Field, create_model
 
 from .enums import SubscriberStatus, Gender
 
@@ -11,6 +13,31 @@ class SubscriberIn(BaseModel):
     adress: str = Field(..., max_length=50)
     phone_number: str = Field(..., min_length=10, max_length=10)
     gender: Gender = Field(...)
+
+    @classmethod
+    def exclude(cls, *fields_to_exclude: Iterable[str]) -> BaseModel:
+        '''
+        Obtain a newly defined model with all the fields of this model but
+        the ones in fields_to_exclude parameter
+        '''
+
+        field_definition = {}
+        model_fields = cls.__fields__
+
+        for fieldname, field in model_fields.items():
+            if fieldname not in fields_to_exclude:
+                if field.required:
+                    field_definition[fieldname] = (field.outer_type_, ...)
+                else:
+                    field_definition[fieldname] = (field.outer_type_, field.default)
+
+        new_model = create_model(
+            __model_name = f'{cls.__name__}_without_{"_".join(fields_to_exclude)}',
+            __base__=BaseModel,
+            **field_definition
+        )
+
+        return new_model
 
 
 class SubscriberOut(SubscriberIn):
