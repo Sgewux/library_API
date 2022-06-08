@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Enum, ForeignKey
+from sqlalchemy import Column, Enum
 from sqlalchemy.types import Integer, String
 
 from config.db import Base

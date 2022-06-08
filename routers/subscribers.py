@@ -1,20 +1,22 @@
 from typing import List
 
+from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from psycopg2.errors import UniqueViolation
 from fastapi.responses import RedirectResponse
-from fastapi import APIRouter, Path, Query, Body, HTTPException
+from fastapi import APIRouter, Path, Query, Body, HTTPException, Depends, Response
 
-
-from config.db import session
+from config.db import get_db_session
 from models.subscriber import Subscriber
 from schemas.subscriber import SubscriberIn, SubscriberOut
-
 
 router = APIRouter(tags=['Subscribers'])
 
 @router.post('/subscribers', response_model=SubscriberOut, status_code=201)
-def add_subscriber(new_subscriber: SubscriberIn = Body(...)):
+def add_subscriber(
+    new_subscriber: SubscriberIn = Body(...),
+    session: Session = Depends(get_db_session)
+):
     subscriber = Subscriber(
         id = new_subscriber.id,
         first_name = new_subscriber.first_name,
@@ -45,67 +47,76 @@ def add_subscriber(new_subscriber: SubscriberIn = Body(...)):
 
 
 @router.get('/subscribers', response_model=List[SubscriberOut])
-def get_subscribers(only_active: bool = Query(True)):
+def get_subscribers(
+    only_active: bool = Query(True),
+    session: Session = Depends(get_db_session)
+):
     q = session.query(Subscriber)
     if only_active:
         q = q.filter(Subscriber.status == 'ACTIVE')
     
     results = q.all()
-    subscribers = []
-    
-    for result in results:
-        subscriber = SubscriberOut(
-            id = result.id,
-            first_name = result.first_name,
-            second_name = result.second_name,
-            first_lastname = result.first_lastname,
-            second_lastname = result.second_lastname,
-            adress = result.adress,
-            phone_number = result.phone_number,
-            gender = result.gender,
-            status = result.status
-        )
-
-        subscribers.append(subscriber)
-    
+    subscribers = list(map(SubscriberOut.build_instance_from_orm, results))
+        
     return subscribers
 
 
 @router.get('/subscribers/{subscriber_id}', response_model=SubscriberOut)
-def get_subscriber(subscriber_id: int = Path(..., gt=0)):
+def get_subscriber(
+    subscriber_id: int = Path(..., gt=0),
+    session: Session = Depends(get_db_session)
+):
     result = session.get(Subscriber, subscriber_id)
 
     if result is not None:
-        subscriber = SubscriberOut(
-            id = result.id,
-            first_name = result.first_name,
-            second_name = result.second_name,
-            first_lastname = result.first_lastname,
-            second_lastname = result.second_lastname,
-            adress = result.adress,
-            phone_number = result.phone_number,
-            gender = result.gender,
-            status = result.status
-        )
-
+        subscriber = SubscriberOut.build_instance_from_orm(result)
+        
         return subscriber
     
     else:
         raise HTTPException(
             status_code=404,
-            detail=f'Unexistenr user for id={subscriber_id}'
+            detail=f'Unexistent user for id={subscriber_id}'
             )
 
 
-@router.put('/subscibers/{subscriber_id}')
+@router.put('/subscibers/{subscriber_id}', response_model=SubscriberOut)
 def update_subscriber(
     subscriber_id: int = Path(..., gt=0), 
-    updated_sub_info: SubscriberIn.exclude('id') = Body(...)
+    updated_sub_info: SubscriberIn.exclude('id') = Body(...),
+    session: Session = Depends(get_db_session)
 ):
-    pass
+    subscriber = session.get(Subscriber, subscriber_id)
+    if subscriber is not None:
+        subscriber.first_name = updated_sub_info.first_name
+        subscriber.second_name = updated_sub_info.second_name
+        subscriber.first_lastname = updated_sub_info.first_lastname
+        subscriber.second_lastname = updated_sub_info.second_lastname
+        subscriber.adress = updated_sub_info.adress
+        subscriber.phone_number = updated_sub_info.phone_number
+        subscriber.gender = updated_sub_info.gender.value
+        
+        session.commit()
+        session.refresh(subscriber)
+
+        return SubscriberOut.build_instance_from_orm(subscriber)
+
+    else:
+        raise HTTPException(
+            status_code=404,
+            detail='Could not update unexistent subscriber'
+        )
+    
 
 
-@router.delete('/subscibers/{subscriber_id}')
-def delete_subscriber(subscriber_id: int = Path(..., gt=0)):
+@router.delete(
+    '/subscibers/{subscriber_id}', 
+    status_code=204,
+    response_class=Response
+)
+def delete_subscriber(
+    subscriber_id: int = Path(..., gt=0),
+    session: Session = Depends(get_db_session)
+):
     session.query(Subscriber).filter(Subscriber.id == subscriber_id).delete()
     session.commit()

@@ -2,6 +2,7 @@ from typing import Iterable
 
 from pydantic import BaseModel, Field, create_model
 
+from models.subscriber import Subscriber
 from .enums import SubscriberStatus, Gender
 
 class SubscriberIn(BaseModel):
@@ -49,5 +50,23 @@ class SubscriberOut(SubscriberIn):
     managin that field.
     '''
     status: SubscriberStatus
+
+    @classmethod
+    def build_instance_from_orm(cls, result: Subscriber):
+        new = cls(
+            id = result.id,
+            first_name = result.first_name,
+            second_name = result.second_name,
+            first_lastname = result.first_lastname,
+            second_lastname = result.second_lastname,
+            adress = result.adress,
+            phone_number = result.phone_number,
+            gender = result.gender,
+            status = result.status
+        )
+
+        return new
+
+
 
 
