@@ -1,7 +1,10 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
+
+from models.views.all_books_info import AllBooksInfo
+from models.views.all_authors_info import AllAuthorsInfo
 
 from .enums import Gender
-from models.author import Author
+
 
 class AuthorIn(BaseModel):
     first_name: str
@@ -16,15 +19,28 @@ class AuthorOut(AuthorIn):
     id: int
 
     @classmethod
-    def build_instance_from_orm(cls, result: Author):
-        new = cls(
-                id = result.author_id,
-                first_name = result.author_first_name,
-                second_name = result.author_second_name,
-                first_lastname = result.author_first_lastname,
-                second_lastname = result.author_second_lastname,
-                gender = result.author_gender,
-                country = result.author_country
-            )
-        
-        return new
+    def build_instance_from_orm(cls, result: AllBooksInfo | AllAuthorsInfo):
+        '''
+        Builds an instance of AuthorOut from an instance of either
+        AllAuthorsInfo or AllBooksInfo (both have the same data)
+        '''
+
+        # Creating kwargs dict 
+        # (keys are AuthorOut schema fields, values are the 'result' obj attrs names that contain the data we need)
+        kwargs = {
+            'id': 'id',
+            'first_name': 'first_name',
+            'second_name': 'second_name',
+            'first_lastname': 'first_lastname',
+            'second_lastname': 'second_lastname',
+            'gender': 'gender',
+            'country': 'country'
+        }
+
+        # extracting the actual attr value
+        for k, v in kwargs.items():
+            if type(result) == AllBooksInfo:
+                v = 'author_' + v # AllBooksInfo has the attr name with 'author_' as prefix, so we add it
+            kwargs[k] = getattr(result, v)  # Obtaning the attr value from is name with getattr(obj, name)
+
+        return cls(**kwargs)  # Bulding instance

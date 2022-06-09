@@ -1,5 +1,4 @@
 from sqlalchemy import Column
-from sqlalchemy.orm import declarative_base
 from sqlalchemy.types import Integer, String, Enum
 
 from config.db import Base
