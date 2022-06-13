@@ -1,5 +1,5 @@
 from sqlalchemy import Column, ForeignKey
-from sqlalchemy.types import Integer, String
+from sqlalchemy.types import Integer, String, Boolean
 
 from config.db import Base
 
@@ -13,3 +13,4 @@ class Book(Base):
     shelf_row_num = Column(Integer)
     category_id = Column(Integer, ForeignKey(Author.id))
     author_id = Column(Integer, ForeignKey(Category.id))
+    available = Column(Boolean)

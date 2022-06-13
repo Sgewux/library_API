@@ -1,5 +1,5 @@
 from sqlalchemy import Column
-from sqlalchemy.types import Integer, String, Enum
+from sqlalchemy.types import Integer, String, Enum, Boolean
 
 from config.db import Base
 
@@ -19,6 +19,7 @@ class AllBooksInfo(Base):
     id = Column(Integer, primary_key=True)
     book_name = Column(String(20))
     category = Column(String(20))
+    available = Column(Boolean)
     author_id = Column(Integer)
     author_first_name = Column(String(20))
     author_second_name = Column(String(20))

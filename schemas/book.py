@@ -12,9 +12,11 @@ class BookLocation(BaseModel):
 class BookOut(BaseModel):
     id: int
     book_name: str
+    available: bool
     category: str
     author_info: AuthorOut
     location: BookLocation
+
 
     @classmethod
     def build_instance_from_orm(cls, result: AllBooksInfo):
@@ -25,6 +27,7 @@ class BookOut(BaseModel):
         new = cls(
             id = result.id,
             book_name = result.book_name,
+            available = result.available,
             category = result.category,
             author_info = AuthorOut.build_instance_from_orm(result),
             location = BookLocation(
