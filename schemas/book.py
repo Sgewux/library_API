@@ -4,18 +4,18 @@ from .author import AuthorOut
 from models.views.all_books_info import AllBooksInfo
 
 class BookLocation(BaseModel):
-    floor: int
-    shelf_number: int
-    shelf_row_number: int
+    floor: int = Field(..., le=2)
+    shelf_number: int = Field(..., le=10)
+    shelf_row_number: int = Field(..., le=10)
 
 
 class BookOut(BaseModel):
-    id: int
-    book_name: str
-    available: bool
-    category: str
-    author_info: AuthorOut
-    location: BookLocation
+    id: int = Field(..., gt=0)
+    book_name: str = Field(..., max_length=20)
+    available: bool = Field(...)
+    category: str = Field(..., max_length=20)
+    author_info: AuthorOut = Field(...)
+    location: BookLocation = Field(...)
 
 
     @classmethod

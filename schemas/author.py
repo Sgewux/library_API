@@ -1,22 +1,22 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from models.views.all_books_info import AllBooksInfo
 from models.views.all_authors_info import AllAuthorsInfo
-
 from .enums import Gender
 
 
 class AuthorIn(BaseModel):
-    first_name: str
-    second_name: str | None
-    first_lastname: str
-    second_lastname: str
-    gender: Gender
-    country: str
+    first_name: str = Field(..., max_length=20)
+    second_name: str | None = Field(None, max_length=20)
+    first_lastname: str= Field(..., max_length=20)
+    second_lastname: str = Field(..., max_length=20)
+    gender: Gender = Field(...)
+    country: int = Field(...)
 
 
 class AuthorOut(AuthorIn):
     id: int
+    country: str = Field(..., max_length=20) # Here contry is represented as its verbose name
 
     @classmethod
     def build_instance_from_orm(cls, result: AllBooksInfo | AllAuthorsInfo):

@@ -12,17 +12,17 @@ from schemas.subscriber import SubscriberIn, SubscriberOut
 
 router = APIRouter(tags=['Subscribers'])
 
-@router.post('/subscribers', response_model=SubscriberOut, status_code=201)
+@router.post('/subscribers', response_class=RedirectResponse)
 def add_subscriber(
     new_subscriber: SubscriberIn = Body(...),
     session: Session = Depends(get_db_session)
 ):
     subscriber = Subscriber(
         id = new_subscriber.id,
-        first_name = new_subscriber.first_name,
-        second_name = new_subscriber.second_name,
-        first_lastname = new_subscriber.first_lastname,
-        second_lastname = new_subscriber.second_lastname,
+        first_name = new_subscriber.first_name.capitalize(),
+        second_name = new_subscriber.second_name.capitalize(),
+        first_lastname = new_subscriber.first_lastname.capitalize(),
+        second_lastname = new_subscriber.second_lastname.capitalize(),
         adress = new_subscriber.adress,
         phone_number = new_subscriber.phone_number,
         gender = new_subscriber.gender.value

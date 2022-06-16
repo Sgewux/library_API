@@ -71,13 +71,13 @@ def get_book(
         )
 
 
-@router.post('/books', status_code=201)
+@router.post('/books', response_class=RedirectResponse)
 def add_book(
     new_book: BookIn = Body(...),
     session: Session = Depends(get_db_session)
 ):
     # Removing leading spaces and double spaces between the words from book name
-    new_book.book_name = re.sub('\s+', ' ', new_book.book_name.strip())
+    new_book.book_name = re.sub('\s+', ' ', new_book.book_name.strip()).capitalize()
 
     try:
         # Using raw SQL because the ORM was missbehaving due to a before insert database trigger.
@@ -85,8 +85,6 @@ def add_book(
                     VALUES('{new_book.book_name}', {new_book.shelf_row_number}, \
                            {new_book.category_id}, {new_book.author_id}) RETURNING id")
 
-        # Leaving 307 (default) will perform a request with same method and same body
-        # return RedirectResponse(f'/books/{book.id}', status_code=303)
         result = engine.execute(sql)
         new_id = result.first()
 
@@ -106,7 +104,7 @@ def add_book(
         if type(postgres_error) == ForeignKeyViolation:
             raise HTTPException(
                 status_code=400,
-                detail='You linked your book to either an unexistent Category id or an unexistent author id'
+                detail='You linked the book to either an unexistent Category id or an unexistent author id'
                 )
     
     except InternalError as e:
@@ -122,6 +120,7 @@ def add_book(
 @router.put(
     '/books/{book_id}',
     status_code=200,
+    response_model=BookOut
 )
 def update_book(
     book_id: int = Path(..., gt=0),
@@ -139,7 +138,11 @@ def update_book(
             session.commit()
             session.refresh(book)
 
-            return book # TODO
+            # Obtaining all the updated book data from AllBooksInfo view
+            return BookOut.build_instance_from_orm(
+                    session.get(AllBooksInfo, book.id)
+                    )
+
         except IntegrityError as e:
             session.rollback()
             postgres_error = e.orig  # The psycopg2 error wrapped by interity error
