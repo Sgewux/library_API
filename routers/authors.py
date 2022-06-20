@@ -1,11 +1,13 @@
 import re
 from typing import List
+from pydantic import PostgresDsn
 
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from fastapi.responses import RedirectResponse
 from psycopg2.errors import ForeignKeyViolation, UniqueViolation
 from fastapi import APIRouter, Path, Query, Body, HTTPException, Depends, Response
+from schemas.book import BookOut
 from schemas.country import CountryIn, CountryOut
 
 from schemas.enums import Gender
@@ -99,7 +101,7 @@ def add_country(
 
 
 @router.get('/authors/countries', response_model=List[CountryOut])
-def get_authors_countries(
+def get_countries(
     record_limit: int = Query(100, gt=0),
     country_name: str | None = Query(None),
     session: Session = Depends(get_db_session)
@@ -116,16 +118,15 @@ def get_authors_countries(
 
 
 @router.get('/authors/countries/{country_id}', response_model=CountryOut)
-def get_authors_contry(
+def get_country(
     country_id: int = Path(...),
     session: Session = Depends(get_db_session)
 ):
     result = session.get(Country, country_id)
 
     if result is not None:
-        country = CountryOut.build_instance_from_orm(result)
         
-        return country
+        return CountryOut.build_instance_from_orm(result)
     
     else:
         raise HTTPException(
@@ -133,19 +134,137 @@ def get_authors_contry(
             detail=f'Unexistent country for id={country_id}'
         )
 
+
+@router.put('/authors/countries/{country_id}', response_model=CountryOut)
+def update_country(
+    country_id: int = Path(..., gt=0),
+    updated_country_info: CountryIn = Body(...),
+    session: Session = Depends(get_db_session)
+):
+    country = session.get(Country, country_id)
+    
+    if country is not None:
+        updated_country_info.name = re.sub(
+            '\s+', ' ', updated_country_info.name.strip()
+            ).capitalize()
+
+        country.name = updated_country_info.name
+        session.commit()
+        session.refresh(country)
+
+        return CountryOut.build_instance_from_orm(country)
+    else:
+        raise HTTPException(
+            status_code=404,
+            detail=f'Could not update unexistent cube for id= {country_id}'
+        )
+
+
+@router.delete(
+    '/authors/countries/{country_id}', 
+    response_class=Response,
+    status_code=204
+)
+def delete_country(
+    country_id: int = Path(..., gt=0),
+    session: Session = Depends(get_db_session)
+):
+    country = session.get(Country, country_id)
+    if country is not None:
+        try:
+            session.delete(country)
+            session.commit()
+        except IntegrityError as e:
+            session.rollback()
+            postgres_error = e.orig
+            
+            if type(postgres_error) == ForeignKeyViolation:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f'Country "{country.name}" is still referenced by authors.'
+                )
+    else:
+        raise HTTPException(
+            status_code=404,
+            detail=f'Could not delete an unexistent Country id= {country_id}'
+        )
+
+
 @router.get('/authors/{author_id}', response_model=AuthorOut)
 def get_author(
-    author_id: int = Path(...),
+    author_id: int = Path(..., gt=0),
     session: Session = Depends(get_db_session)
 ):
     result = session.get(AllAuthorsInfo, author_id)
     if result is not None:
-        author = AuthorOut.build_instance_from_orm(result)
-
-        return author
+      
+        return AuthorOut.build_instance_from_orm(result)
     
     else:
         raise HTTPException(
             status_code=404,
             detail=f'Unexistent author for id= {author_id}'
         )
+
+
+@router.put('/authors/{author_id}', response_model=AuthorOut)
+def update_author(
+    author_id: int = Path(..., gt=0),
+    updated_author_info: AuthorIn = Body(...),
+    session: Session = Depends(get_db_session)
+):
+    author = session.get(Author, author_id)
+
+    if author is not None:
+        try:
+            author.first_name = updated_author_info.first_name.capitalize()
+            author.second_name = updated_author_info.second_name.capitalize()
+            author.first_lastname = updated_author_info.first_lastname.capitalize()
+            author.second_lastname = updated_author_info.second_lastname.capitalize()
+            author.gender = updated_author_info.gender.value
+            author.country_id = updated_author_info.country
+
+            session.commit()
+
+            return AuthorOut.build_instance_from_orm(
+                session.get(AllAuthorsInfo, author.id)
+            )
+
+        except IntegrityError as e:
+            session.rollback()
+            postgres_error = e.orig
+            if type(postgres_error) == ForeignKeyViolation:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f'The author was linked to an unexistent country id= {updated_author_info.country}'
+                )
+    else:
+        raise HTTPException(
+            status_code=404,
+            detail=f'Could not udpate unexistent Author id= {author_id}'
+        )
+
+
+@router.delete(
+    '/authors/{author_id}',
+    response_class=Response,
+    status_code=204
+)
+def delete_author(
+    author_id: int = Path(..., gt=0),
+    session: Session = Depends(get_db_session)
+):
+    author = session.get(Author, author_id)
+    if author is not None:
+        try:
+            session.delete(author)
+            session.commit()
+            
+        except IntegrityError as e:
+            session.rollback()
+            postgres_error = e.orig
+            if type(postgres_error) == ForeignKeyViolation:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f'Author id= {author.id} is still referenced by Books.'
+                )

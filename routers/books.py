@@ -90,7 +90,7 @@ def add_book(
 
         if new_id is not None:
             # If a completly new book was added to the database.
-            return RedirectResponse(f'/books/{new_id}', status_code=303)
+            return RedirectResponse(f'/books/{new_id[0]}', status_code=303)
         else:
             # If the "new" book was already registered BUT marked as not available (softdeleted)
             # then no id is returned from the insert (because no inserts were performed) due to
@@ -136,7 +136,6 @@ def update_book(
             book.author_id = updated_book_info.author_id
 
             session.commit()
-            session.refresh(book)
 
             # Obtaining all the updated book data from AllBooksInfo view
             return BookOut.build_instance_from_orm(
@@ -168,9 +167,9 @@ def delete_book(
     book_id: int = Path(..., gt=0),
     session: Session = Depends(get_db_session)
 ):
-    record = session.query(Book).filter(Book.id == book_id)
-    if record.first() is not None:
-        record.delete()
+    book = session.get(Book, book_id)
+    if book is not None:
+        session.delete(book)
         session.commit()
     else:
         raise HTTPException(

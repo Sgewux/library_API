@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field
 
 from models.country import Country
+
 class CountryIn(BaseModel):
     name: str = Field(..., max_length=20)
 
