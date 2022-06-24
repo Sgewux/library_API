@@ -46,9 +46,8 @@ def get_books(
     results = session.query(AllBooksInfo).\
               filter(*filters).limit(record_limit).all()  # Notice the '*' before 'filters'
     
-    books = list(map(BookOut.build_instance_from_orm, results))
 
-    return books
+    return list(map(BookOut.build_instance_from_orm, results))
 
 
 @router.get('/books/{book_id}', response_model=BookOut)
@@ -60,9 +59,7 @@ def get_book(
     result = session.get(AllBooksInfo, book_id)
 
     if result is not None:
-        book = BookOut.build_instance_from_orm(result)
-
-        return book
+        return  BookOut.build_instance_from_orm(result)
 
     else:
         raise HTTPException(

@@ -56,9 +56,8 @@ def get_subscribers(
         q = q.filter(Subscriber.status == 'ACTIVE')
     
     results = q.all()
-    subscribers = list(map(SubscriberOut.build_instance_from_orm, results))
         
-    return subscribers
+    return list(map(SubscriberOut.build_instance_from_orm, results))
 
 
 @router.get('/subscribers/{subscriber_id}', response_model=SubscriberOut)
@@ -69,9 +68,7 @@ def get_subscriber(
     result = session.get(Subscriber, subscriber_id)
 
     if result is not None:
-        subscriber = SubscriberOut.build_instance_from_orm(result)
-        
-        return subscriber
+        return SubscriberOut.build_instance_from_orm(result)
     
     else:
         raise HTTPException(
@@ -118,5 +115,12 @@ def delete_subscriber(
     subscriber_id: int = Path(..., gt=0),
     session: Session = Depends(get_db_session)
 ):
-    session.query(Subscriber).filter(Subscriber.id == subscriber_id).delete()
-    session.commit()
+    subscriber = session.get(Subscriber, subscriber_id)
+    if subscriber is not None:
+        session.delete(subscriber)
+        session.commit()
+    else:
+        raise HTTPException(
+            status_code=404,
+            detail=f'Could not mark inactive unexistent subscriber id={subscriber_id}'
+        )
