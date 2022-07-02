@@ -100,7 +100,7 @@ def add_book(
         postgres_error = e.orig  # The psycopg2 error wrapped by interity error
         if type(postgres_error) == ForeignKeyViolation:
             raise HTTPException(
-                status_code=400,
+                status_code=422,
                 detail='You linked the book to either an unexistent Category id or an unexistent author id'
                 )
     
@@ -109,7 +109,7 @@ def add_book(
         postgres_error = e.orig
         
         raise HTTPException(
-            status_code=400,
+            status_code=422,
             detail=str(postgres_error).split('\n')[0]
         )
 
@@ -144,7 +144,7 @@ def update_book(
             postgres_error = e.orig  # The psycopg2 error wrapped by interity error
             if type(postgres_error) == ForeignKeyViolation:
                 raise HTTPException(
-                status_code=400,
+                status_code=422,
                 detail='You linked your book to either an unexistent Category id or an unexistent author id'
             )
 

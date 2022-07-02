@@ -37,14 +37,14 @@ def add_category(
         if type(postgres_error) == UniqueViolation:
             if 'categories_floor_shelf_number_key' in postgres_error.pgerror:
                 raise HTTPException(
-                    status_code=400,
+                    status_code=422,
                     detail=f'There is already a category with:\
                         Floor= {category.floor} and Shelf_number= {category.shelf_number}. \
                         Please assing a different location for the new cateogory.'
                 )
             elif 'categories_category_name_key' in postgres_error.pgerror:
                 raise HTTPException(
-                    status_code=400,
+                    status_code=422,
                     detail=f'There is already a category with name= {category.category_name}'
                 )
 
@@ -112,14 +112,14 @@ def update_category(
             if type(postgres_error) == UniqueViolation:
                 if 'categories_floor_shelf_number_key' in postgres_error.pgerror:
                     raise HTTPException(
-                        status_code=400,
+                        status_code=422,
                         detail=f'There is already a category with:\
                         Floor= {updated_category_info.floor} and Shelf_number= {updated_category_info.shelf}. \
                         Please assing a different location for the cateogory.'
                     )
                 elif 'categories_category_name_key' in postgres_error.pgerror:
                     raise HTTPException(
-                        status_code=400,
+                        status_code=422,
                         detail=f'There is already a category with name= {updated_category_info.name}'
                     )
 
@@ -149,7 +149,7 @@ def delete_category(
             postgres_error = e.orig
             if type(postgres_error) == ForeignKeyViolation:
                 raise HTTPException(
-                    status_code=400,
+                    status_code=422,
                     detail=f'Category "{category.category_name}" is still referenced by books'
                 )
 

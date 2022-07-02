@@ -1,4 +1,5 @@
 from sqlalchemy import Column, ForeignKey
+from sqlalchemy.schema import FetchedValue
 from sqlalchemy.types import Integer, Boolean, Date
 
 from config.db import Base
@@ -12,5 +13,5 @@ class Loan(Base):
     loan_date = Column(Date)
     loan_exp_date = Column(Date)
     subscriber_id = Column(Integer, ForeignKey(Subscriber.id))
-    book_id = Column(Integer, ForeignKey(Book))
-    already_returned = Column(Boolean)
+    book_id = Column(Integer, ForeignKey(Book.id))
+    already_returned = Column(Boolean, FetchedValue())

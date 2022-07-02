@@ -41,7 +41,7 @@ def add_subscriber(
 
         if type(postgres_error) == UniqueViolation:
             raise HTTPException(
-                status_code=400,
+                status_code=422,
                 detail=f'Phone number {subscriber.phone_number} is an already used phone number'
             )
 

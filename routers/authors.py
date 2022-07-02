@@ -47,7 +47,7 @@ def add_author(
 
         if type(postgres_error) == ForeignKeyViolation:
             raise HTTPException(
-                status_code=400,
+                status_code=422,
                 detail='You linked the author to an unexistent country id.'
             )
 
@@ -95,7 +95,7 @@ def add_country(
         
         if type(postgres_error) == UniqueViolation:
             raise HTTPException(
-                status_code=400,
+                status_code=422,
                 detail=f'Contry with name= "{new_country}" already exists.'
             )
 
@@ -180,7 +180,7 @@ def delete_country(
             
             if type(postgres_error) == ForeignKeyViolation:
                 raise HTTPException(
-                    status_code=400,
+                    status_code=422,
                     detail=f'Country "{country.name}" is still referenced by authors.'
                 )
     else:
@@ -235,7 +235,7 @@ def update_author(
             postgres_error = e.orig
             if type(postgres_error) == ForeignKeyViolation:
                 raise HTTPException(
-                    status_code=400,
+                    status_code=422,
                     detail=f'The author was linked to an unexistent country id= {updated_author_info.country}'
                 )
     else:
@@ -265,6 +265,6 @@ def delete_author(
             postgres_error = e.orig
             if type(postgres_error) == ForeignKeyViolation:
                 raise HTTPException(
-                    status_code=400,
+                    status_code=422,
                     detail=f'Author id= {author.id} is still referenced by Books.'
                 )
