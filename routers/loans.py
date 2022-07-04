@@ -1,5 +1,3 @@
-from typing import List
-
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from psycopg2.errors import CheckViolation, ForeignKeyViolation
@@ -8,13 +6,12 @@ from fastapi import APIRouter, Path, Query, Body, HTTPException, Depends, Respon
 
 from models.loan import Loan
 from models.book import Book
-from models.subscriber import Subscriber
-from schemas.loan import LoanIn
+from schemas.loan import LoanIn, LoanOut
 from config.db import get_db_session
 
 router = APIRouter(tags=['Loans'])
 
-@router.post('/loans')
+@router.post('/loans', response_class=RedirectResponse)
 def add_loan(
     loan_info: LoanIn = Body(...),
     session: Session = Depends(get_db_session)
@@ -46,6 +43,8 @@ def add_loan(
             session.add(loan)
             session.commit()
             session.refresh(loan)
+
+            return RedirectResponse(f'/loans/{loan.id}', status_code=303)
         
         except IntegrityError as e:
             session.rollback()
@@ -73,4 +72,38 @@ def add_loan(
             status_code=422,
             detail=f'Book id= {loan_info.book_id} was borrowed and has not been returned yet'
         )
-    
+
+
+@router.get('/loans/{loan_id}', response_model=LoanOut)
+def get_loan(
+    loan_id: int = Path(..., gt=0),
+    session: Session = Depends(get_db_session)
+):
+    result = session.get(Loan, loan_id)
+    if result is not None:
+        return LoanOut.build_instance_from_orm(result)
+    else:
+        raise HTTPException(
+            status_code=404,
+            detail=f'Unexistent loan id= {loan_id}'
+        )
+
+
+@router.delete(
+    '/loans/{loan_id}', 
+    status_code=204,
+    response_class=Response
+    )
+def mark_loan_as_returned(
+    loan_id: int = Path(..., gt=0),
+    session: Session = Depends(get_db_session)
+):
+    loan = session.get(Loan, loan_id)
+    if loan is not None:
+        session.delete(loan)
+        session.commit()
+    else:
+        raise HTTPException(
+            status_code=404,
+            detail=f'Could not mark as returned unexistent loan id= {loan_id}'
+        )
