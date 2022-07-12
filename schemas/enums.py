@@ -7,3 +7,7 @@ class Gender(Enum):
 class SubscriberStatus(Enum):
     ACTIVE = 'ACTIVE'
     INACTIVE = 'INACTIVE'
+
+class LibrarianRole(Enum):
+    SUPERVISOR = 'SUPERVISOR'
+    VOLUNTEER = 'VOLUNTEER'
