@@ -1,5 +1,6 @@
 from datetime import datetime
 from datetime import date
+from xmlrpc.client import boolean
 
 from pydantic import BaseModel, Field
 
@@ -13,6 +14,7 @@ class LoanIn(BaseModel):
     book_id: int = Field(..., gt=0)
 
 class LoanOut(LoanIn):
+    already_returned: boolean
     id: int = Field(..., gt=0)
 
     @classmethod
@@ -22,7 +24,8 @@ class LoanOut(LoanIn):
             loan_date = result.loan_date,
             loan_exp_date = result.loan_exp_date,
             subscriber_id = result.subscriber_id,
-            book_id = result.book_id
+            book_id = result.book_id,
+            already_returned = result.already_returned
         )
 
         return new

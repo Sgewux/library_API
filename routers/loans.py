@@ -6,15 +6,17 @@ from fastapi import APIRouter, Path, Query, Body, HTTPException, Depends, Respon
 
 from models.loan import Loan
 from models.book import Book
-from schemas.loan import LoanIn, LoanOut
 from config.db import get_db_session
+from schemas.loan import LoanIn, LoanOut
+from utils.auth import get_librarian_session
 
 router = APIRouter(tags=['Loans'])
 
 @router.post('/loans', response_class=RedirectResponse)
 def add_loan(
     loan_info: LoanIn = Body(...),
-    session: Session = Depends(get_db_session)
+    session: Session = Depends(get_db_session),
+    _ = Depends(get_librarian_session)  # A librarian must be authenticated, no matter the role
 ):
     already_borrowed = session.query(
         session.query(Loan).filter(
@@ -77,7 +79,8 @@ def add_loan(
 @router.get('/loans/{loan_id}', response_model=LoanOut)
 def get_loan(
     loan_id: int = Path(..., gt=0),
-    session: Session = Depends(get_db_session)
+    session: Session = Depends(get_db_session),
+    _ = Depends(get_librarian_session)
 ):
     result = session.get(Loan, loan_id)
     if result is not None:
@@ -96,7 +99,8 @@ def get_loan(
     )
 def mark_loan_as_returned(
     loan_id: int = Path(..., gt=0),
-    session: Session = Depends(get_db_session)
+    session: Session = Depends(get_db_session),
+    _ = Depends(get_librarian_session)
 ):
     loan = session.get(Loan, loan_id)
     if loan is not None:
