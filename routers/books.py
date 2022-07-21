@@ -11,6 +11,7 @@ from fastapi import APIRouter, Path, Query, Body, HTTPException, Depends, Respon
 from models.book import Book
 from schemas.enums import Gender
 from config.db import get_db_session, engine
+from utils.auth import get_librarian_session
 from models.views.all_books_info import AllBooksInfo
 from schemas.book import BookIn, BookOut
 
@@ -71,6 +72,7 @@ def get_book(
 @router.post('/books', response_class=RedirectResponse)
 def add_book(
     new_book: BookIn = Body(...),
+    _ = Depends(get_librarian_session),
     session: Session = Depends(get_db_session)
 ):
     # Removing leading spaces and double spaces between the words from book name
@@ -122,6 +124,7 @@ def add_book(
 def update_book(
     book_id: int = Path(..., gt=0),
     updated_book_info: BookIn = Body(...),
+    _ = Depends(get_librarian_session),
     session: Session = Depends(get_db_session)
 ):
     book = session.get(Book, book_id)
@@ -162,6 +165,7 @@ def update_book(
 )
 def delete_book(
     book_id: int = Path(..., gt=0),
+    _ = Depends(get_librarian_session),
     session: Session = Depends(get_db_session)
 ):
     book = session.get(Book, book_id)

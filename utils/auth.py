@@ -5,6 +5,8 @@ from jose.exceptions import JWTError
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 
+from schemas.enums import LibrarianRole
+
 from .token import decode_token
 from config.db import get_db_session
 from models.librarian import Librarian

@@ -1,6 +1,5 @@
 import re
 from typing import List
-from pydantic import PostgresDsn
 
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
@@ -13,8 +12,9 @@ from schemas.country import CountryIn, CountryOut
 from schemas.enums import Gender
 from models.author import Author
 from models.country import Country
-from schemas.author import AuthorIn, AuthorOut
 from config.db import get_db_session
+from utils.auth import get_librarian_session
+from schemas.author import AuthorIn, AuthorOut
 from models.views.all_authors_info import AllAuthorsInfo
 
 router = APIRouter(tags=['Authors'])
@@ -22,17 +22,18 @@ router = APIRouter(tags=['Authors'])
 
 @router.post('/authors', response_class=RedirectResponse)
 def add_author(
-    new_book: AuthorIn = Body(...),
+    author_info: AuthorIn = Body(...),
+    _ = Depends(get_librarian_session),
     session: Session = Depends(get_db_session)
 ):
     try:
         author = Author(
-            first_name = new_book.first_name.capitalize(),
-            second_name = new_book.second_name.capitalize(),
-            first_lastname = new_book.first_lastname.capitalize(),
-            second_lastname = new_book.second_lastname.capitalize(),
-            gender = new_book.gender.value,
-            country_id = new_book.country
+            first_name = author_info.first_name.capitalize(),
+            second_name = author_info.second_name.capitalize()  if author_info.second_name is not None else None,
+            first_lastname = author_info.first_lastname.capitalize(),
+            second_lastname = author_info.second_lastname.capitalize(),
+            gender = author_info.gender.value,
+            country_id = author_info.country
         )
 
         session.add(author)
@@ -75,6 +76,7 @@ def get_authors(
 @router.post('/authors/countries', response_class=RedirectResponse)
 def add_country(
     new_country: CountryIn = Body(...),
+    _ = Depends(get_librarian_session),
     session: Session = Depends(get_db_session)
 ):
     try:
@@ -139,6 +141,7 @@ def get_country(
 def update_country(
     country_id: int = Path(..., gt=0),
     updated_country_info: CountryIn = Body(...),
+    _ = Depends(get_librarian_session),
     session: Session = Depends(get_db_session)
 ):
     country = session.get(Country, country_id)
@@ -167,6 +170,7 @@ def update_country(
 )
 def delete_country(
     country_id: int = Path(..., gt=0),
+    _ = Depends(get_librarian_session),
     session: Session = Depends(get_db_session)
 ):
     country = session.get(Country, country_id)
@@ -211,6 +215,7 @@ def get_author(
 def update_author(
     author_id: int = Path(..., gt=0),
     updated_author_info: AuthorIn = Body(...),
+    _ = Depends(get_librarian_session),
     session: Session = Depends(get_db_session)
 ):
     author = session.get(Author, author_id)
@@ -218,7 +223,7 @@ def update_author(
     if author is not None:
         try:
             author.first_name = updated_author_info.first_name.capitalize()
-            author.second_name = updated_author_info.second_name.capitalize()
+            author.second_name = updated_author_info.second_name.capitalize() if updated_author_info is not None else None
             author.first_lastname = updated_author_info.first_lastname.capitalize()
             author.second_lastname = updated_author_info.second_lastname.capitalize()
             author.gender = updated_author_info.gender.value
@@ -252,6 +257,7 @@ def update_author(
 )
 def delete_author(
     author_id: int = Path(..., gt=0),
+    _ = Depends(get_librarian_session),
     session: Session = Depends(get_db_session)
 ):
     author = session.get(Author, author_id)
@@ -266,5 +272,10 @@ def delete_author(
             if type(postgres_error) == ForeignKeyViolation:
                 raise HTTPException(
                     status_code=422,
-                    detail=f'Author id= {author.id} is still referenced by Books.'
+                    detail=f'Author id= {author_id} is still referenced by Books.'
                 )
+    else:
+        raise HTTPException(
+            status_code=404,
+            detail=f'Could not delete unexistent author id={author_id}'
+        )

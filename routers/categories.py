@@ -1,6 +1,5 @@
 import re
 from typing import List
-from unicodedata import category
 
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
@@ -10,6 +9,7 @@ from fastapi import APIRouter, Path, Query, Body, HTTPException, Depends, Respon
 
 from config.db import get_db_session
 from models.category import Category
+from utils.auth import get_librarian_session
 from schemas.category import CategoryIn, CategoryOut
 
 router = APIRouter(tags=['Categories'])
@@ -17,6 +17,7 @@ router = APIRouter(tags=['Categories'])
 @router.post('/categories', response_class=RedirectResponse)
 def add_category(
     new_category: CategoryIn = Body(...),
+    _ = Depends(get_librarian_session),
     session: Session = Depends(get_db_session)
 ):
     new_category.name = re.sub('\s+', ' ', new_category.name.strip()).capitalize()
@@ -88,6 +89,7 @@ def get_category(
 def update_category(
     category_id: int = Path(..., gt=0),
     updated_category_info: CategoryIn = Body(...),
+    _ = Depends(get_librarian_session),
     session: Session = Depends(get_db_session)
 ):
     category = session.get(Category, category_id)
@@ -137,6 +139,7 @@ def update_category(
 )
 def delete_category(
     category_id: int = Path(..., gt=0),
+    _ = Depends(get_librarian_session),
     session: Session = Depends(get_db_session)
 ):
     category = session.get(Category, category_id)

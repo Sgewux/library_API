@@ -8,6 +8,7 @@ from fastapi import APIRouter, Path, Query, Body, HTTPException, Depends, Respon
 
 from config.db import get_db_session
 from models.subscriber import Subscriber
+from utils.auth import get_librarian_session
 from schemas.subscriber import SubscriberIn, SubscriberOut
 
 router = APIRouter(tags=['Subscribers'])
@@ -15,12 +16,13 @@ router = APIRouter(tags=['Subscribers'])
 @router.post('/subscribers', response_class=RedirectResponse)
 def add_subscriber(
     new_subscriber: SubscriberIn = Body(...),
+    _ = Depends(get_librarian_session),
     session: Session = Depends(get_db_session)
 ):
     subscriber = Subscriber(
         id = new_subscriber.id,
         first_name = new_subscriber.first_name.capitalize(),
-        second_name = new_subscriber.second_name.capitalize(),
+        second_name = new_subscriber.second_name.capitalize()  if new_subscriber.second_name is not None else None,
         first_lastname = new_subscriber.first_lastname.capitalize(),
         second_lastname = new_subscriber.second_lastname.capitalize(),
         adress = new_subscriber.adress,
@@ -49,6 +51,7 @@ def add_subscriber(
 @router.get('/subscribers', response_model=List[SubscriberOut])
 def get_subscribers(
     only_active: bool = Query(True),
+    _ = Depends(get_librarian_session),
     session: Session = Depends(get_db_session)
 ):
     q = session.query(Subscriber)
@@ -63,6 +66,7 @@ def get_subscribers(
 @router.get('/subscribers/{subscriber_id}', response_model=SubscriberOut)
 def get_subscriber(
     subscriber_id: int = Path(..., gt=0),
+    _ = Depends(get_librarian_session),
     session: Session = Depends(get_db_session)
 ):
     result = session.get(Subscriber, subscriber_id)
@@ -81,6 +85,7 @@ def get_subscriber(
 def update_subscriber(
     subscriber_id: int = Path(..., gt=0), 
     updated_sub_info: SubscriberIn.exclude('id') = Body(...),
+    _ = Depends(get_librarian_session),
     session: Session = Depends(get_db_session)
 ):
     subscriber = session.get(Subscriber, subscriber_id)
@@ -113,6 +118,7 @@ def update_subscriber(
 )
 def delete_subscriber(
     subscriber_id: int = Path(..., gt=0),
+    _ = Depends(get_librarian_session),
     session: Session = Depends(get_db_session)
 ):
     subscriber = session.get(Subscriber, subscriber_id)
