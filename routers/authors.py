@@ -28,10 +28,10 @@ def add_author(
 ):
     try:
         author = Author(
-            first_name = author_info.first_name.capitalize(),
-            second_name = author_info.second_name.capitalize()  if author_info.second_name is not None else None,
-            first_lastname = author_info.first_lastname.capitalize(),
-            second_lastname = author_info.second_lastname.capitalize(),
+            first_name = author_info.first_name,
+            second_name = author_info.second_name,
+            first_lastname = author_info.first_lastname,
+            second_lastname = author_info.second_lastname,
             gender = author_info.gender.value,
             country_id = author_info.country
         )
@@ -222,10 +222,10 @@ def update_author(
 
     if author is not None:
         try:
-            author.first_name = updated_author_info.first_name.capitalize()
-            author.second_name = updated_author_info.second_name.capitalize() if updated_author_info is not None else None
-            author.first_lastname = updated_author_info.first_lastname.capitalize()
-            author.second_lastname = updated_author_info.second_lastname.capitalize()
+            author.first_name = updated_author_info.first_name
+            author.second_name = updated_author_info.second_name
+            author.first_lastname = updated_author_info.first_lastname
+            author.second_lastname = updated_author_info.second_lastname
             author.gender = updated_author_info.gender.value
             author.country_id = updated_author_info.country
 

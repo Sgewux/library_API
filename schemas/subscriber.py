@@ -1,8 +1,9 @@
 from typing import Iterable
 
-from pydantic import BaseModel, Field, create_model
+from pydantic import BaseModel, Field, root_validator
 
 from models.subscriber import Subscriber
+from schemas.parsing_utils.people_names import parse_names
 from .enums import SubscriberStatus, Gender
 
 class SubscriberIn(BaseModel):
@@ -15,30 +16,48 @@ class SubscriberIn(BaseModel):
     phone_number: str = Field(..., min_length=10, max_length=10)
     gender: Gender = Field(...)
 
-    @classmethod
-    def exclude(cls, *fields_to_exclude: Iterable[str]) -> BaseModel:
-        '''
-        Obtain a newly defined model with all the fields of this model but
-        the ones in fields_to_exclude parameter
-        '''
+    @root_validator
+    def validate_names(cls, values):
+        return parse_names(values)
 
-        field_definition = {}
-        model_fields = cls.__fields__
+    # @classmethod
+    # def exclude(cls, *fields_to_exclude: Iterable[str]) -> BaseModel:
+    #     '''
+    #     Obtain a newly defined model with all the fields of this model but
+    #     the ones in fields_to_exclude parameter
+    #     '''
 
-        for fieldname, field in model_fields.items():
-            if fieldname not in fields_to_exclude:
-                if field.required:
-                    field_definition[fieldname] = (field.outer_type_, ...)
-                else:
-                    field_definition[fieldname] = (field.outer_type_, field.default)
+    #     field_definition = {}
+    #     model_fields = cls.__fields__
 
-        new_model = create_model(
-            __model_name = f'{cls.__name__}_without_{"_".join(fields_to_exclude)}',
-            __base__=BaseModel,
-            **field_definition
-        )
+    #     for fieldname, field in model_fields.items():
+    #         if fieldname not in fields_to_exclude:
+    #             if field.required:
+    #                 field_definition[fieldname] = (field.outer_type_, ...)
+    #             else:
+    #                 field_definition[fieldname] = (field.outer_type_, field.default)
 
-        return new_model
+    #     new_model = create_model(
+    #         __model_name = f'{cls.__name__}_without_{"_".join(fields_to_exclude)}',
+    #         __base__=BaseModel,
+    #         **field_definition
+    #     )
+
+    #     return new_model
+
+
+class SubscriberUpdate(BaseModel):
+    first_name: str = Field(..., max_length=20)
+    second_name: str | None = Field(None, max_length=20)
+    first_lastname: str = Field(..., max_length=20)
+    second_lastname: str = Field(..., max_length=20)
+    adress: str = Field(..., max_length=50)
+    phone_number: str = Field(..., min_length=10, max_length=10)
+    gender: Gender = Field(...)
+
+    @root_validator
+    def validate_names(cls, values):
+        return parse_names(values)
 
 
 class SubscriberOut(SubscriberIn):

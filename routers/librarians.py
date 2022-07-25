@@ -30,10 +30,10 @@ def register_librarian(
 
             librarian = Librarian(
                 id = librarian_info.id,
-                first_name = librarian_info.first_name.capitalize(),
-                second_name = librarian_info.second_name.capitalize() if librarian_info.second_name is not None else None,
-                first_lastname = librarian_info.first_lastname.capitalize(),
-                second_lastname = librarian_info.second_lastname.capitalize(),
+                first_name = librarian_info,
+                second_name = librarian_info.second_name,
+                first_lastname = librarian_info.first_lastname,
+                second_lastname = librarian_info.second_lastname,
                 role = librarian_info.role.value,
                 access_password = hash_password(librarian_info.access_password) # Storing hashed password
             )
@@ -100,10 +100,10 @@ def update_librarian_info(
     if librarian_session.id == librarian_id:
         librarian = session.get(Librarian, librarian_id)
 
-        librarian.first_name = updated_librarian_info.first_name.capitalize()
-        librarian.second_name = updated_librarian_info.second_lastname.capitalize() if updated_librarian_info.second_name is not None else None
-        librarian.first_lastname = updated_librarian_info.first_lastname.capitalize()
-        librarian.second_lastname = updated_librarian_info.second_lastname.capitalize()
+        librarian.first_name = updated_librarian_info
+        librarian.second_name = updated_librarian_info
+        librarian.first_lastname = updated_librarian_info
+        librarian.second_lastname = updated_librarian_info
         librarian.role = updated_librarian_info.role.value
         librarian.access_password = hash_password(updated_librarian_info.access_password)
 

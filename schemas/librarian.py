@@ -1,9 +1,9 @@
-from os import access
 import re
 
-from pydantic import BaseModel, Field, validator
-from models.librarian import Librarian
+from pydantic import BaseModel, Field, validator, root_validator
 
+from models.librarian import Librarian
+from schemas.parsing_utils.people_names import parse_names
 from schemas.enums import LibrarianRole
 
 class LibrarianIn(BaseModel):
@@ -14,6 +14,10 @@ class LibrarianIn(BaseModel):
     second_lastname: str = Field(..., max_length=20)
     role: LibrarianRole = Field(...)
     access_password: str = Field(..., min_length=8)
+
+    @root_validator
+    def validate_names(cls, values):
+        return parse_names(values)
 
     @validator('access_password')
     def is_secure_password(cls, password):

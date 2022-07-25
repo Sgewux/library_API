@@ -1,7 +1,8 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, root_validator
 
 from models.views.all_books_info import AllBooksInfo
 from models.views.all_authors_info import AllAuthorsInfo
+from schemas.parsing_utils.people_names import parse_names
 from .enums import Gender
 
 
@@ -13,6 +14,9 @@ class AuthorIn(BaseModel):
     gender: Gender = Field(...)
     country: int = Field(...)
 
+    @root_validator
+    def validate_names(cls, values):
+        return parse_names(values)
 
 class AuthorOut(AuthorIn):
     id: int

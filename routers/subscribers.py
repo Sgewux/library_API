@@ -1,15 +1,15 @@
 from typing import List
 
 from sqlalchemy.orm import Session
-from sqlalchemy.exc import IntegrityError
-from psycopg2.errors import UniqueViolation
+from sqlalchemy.exc import IntegrityError, InternalError
+from psycopg2.errors import UniqueViolation, RaiseException
 from fastapi.responses import RedirectResponse
 from fastapi import APIRouter, Path, Query, Body, HTTPException, Depends, Response
 
 from config.db import get_db_session
 from models.subscriber import Subscriber
 from utils.auth import get_librarian_session
-from schemas.subscriber import SubscriberIn, SubscriberOut
+from schemas.subscriber import SubscriberIn, SubscriberOut, SubscriberUpdate
 
 router = APIRouter(tags=['Subscribers'])
 
@@ -21,10 +21,10 @@ def add_subscriber(
 ):
     subscriber = Subscriber(
         id = new_subscriber.id,
-        first_name = new_subscriber.first_name.capitalize(),
-        second_name = new_subscriber.second_name.capitalize()  if new_subscriber.second_name is not None else None,
-        first_lastname = new_subscriber.first_lastname.capitalize(),
-        second_lastname = new_subscriber.second_lastname.capitalize(),
+        first_name = new_subscriber.first_name,
+        second_name = new_subscriber.second_name,
+        first_lastname = new_subscriber.first_lastname,
+        second_lastname = new_subscriber.second_lastname,
         adress = new_subscriber.adress,
         phone_number = new_subscriber.phone_number,
         gender = new_subscriber.gender.value
@@ -46,6 +46,15 @@ def add_subscriber(
                 status_code=422,
                 detail=f'Phone number {subscriber.phone_number} is an already used phone number'
             )
+
+    except InternalError as e:
+        session.rollback()
+        postgres_error = e.orig
+
+        raise HTTPException(
+            status_code=422,
+            detail=str(postgres_error).split('\n')[0]
+        )
 
 
 @router.get('/subscribers', response_model=List[SubscriberOut])
@@ -84,7 +93,7 @@ def get_subscriber(
 @router.put('/subscibers/{subscriber_id}', response_model=SubscriberOut)
 def update_subscriber(
     subscriber_id: int = Path(..., gt=0), 
-    updated_sub_info: SubscriberIn.exclude('id') = Body(...),
+    updated_sub_info: SubscriberUpdate = SubscriberUpdate,
     _ = Depends(get_librarian_session),
     session: Session = Depends(get_db_session)
 ):
