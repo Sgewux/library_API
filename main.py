@@ -2,7 +2,9 @@ from fastapi import FastAPI
 
 from routers import books, categories, subscribers, authors, loans, librarians
 
-app = FastAPI()
+app = FastAPI(
+    title='Library API'
+)
 
 app.include_router(books.router)
 app.include_router(loans.router)

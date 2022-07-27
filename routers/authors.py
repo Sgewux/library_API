@@ -80,8 +80,6 @@ def add_country(
     session: Session = Depends(get_db_session)
 ):
     try:
-        # Naming country with the first letter in uppercase and the remains in lowercase
-        new_country.name = re.sub('\s+', ' ', new_country.name.strip()).capitalize()
         country = Country(
             name= new_country.name
         )

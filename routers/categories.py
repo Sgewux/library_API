@@ -20,7 +20,7 @@ def add_category(
     _ = Depends(get_librarian_session),
     session: Session = Depends(get_db_session)
 ):
-    new_category.name = re.sub('\s+', ' ', new_category.name.strip()).capitalize()
+
     category = Category(
         category_name=new_category.name,
         floor=new_category.floor,

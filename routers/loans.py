@@ -2,11 +2,13 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from psycopg2.errors import CheckViolation, ForeignKeyViolation
 from fastapi.responses import RedirectResponse
-from fastapi import APIRouter, Path, Query, Body, HTTPException, Depends, Response
+from fastapi import APIRouter, Path, Body, HTTPException, Depends, Response
 
 from models.loan import Loan
 from models.book import Book
 from config.db import get_db_session
+from models.subscriber import Subscriber
+from schemas.enums import SubscriberStatus
 from schemas.loan import LoanIn, LoanOut
 from utils.auth import get_librarian_session
 
@@ -22,8 +24,8 @@ def add_loan(
         session.query(Loan).filter(
                 Loan.book_id == loan_info.book_id, 
                 Loan.already_returned == False
-            ).exists()
-        ).scalar()
+            ).exists() # Converts query into exists query EXISTS(SELECT ....)
+        ).scalar() # Returns first value of first row (in this case we'll see only one val and one row cause is a SELECT EXISTS(...))
     
     is_available = session.query(
         session.query(Book).filter(
@@ -32,7 +34,14 @@ def add_loan(
         ).exists()
     ).scalar()
 
-    condition = (is_available, not already_borrowed)
+    is_active_sub = session.query(
+        session.query(Subscriber).filter(
+            Subscriber.id == loan_info.subscriber_id,
+            Subscriber.status == SubscriberStatus.ACTIVE.value
+        ).exists()
+    ).scalar()
+
+    condition = (is_available, not already_borrowed, is_active_sub)
 
     if all(condition): # Book available AND not already burrowwed
         try:
@@ -51,13 +60,8 @@ def add_loan(
         except IntegrityError as e:
             session.rollback()
             postgres_error = e.orig
-            if type(postgres_error) == ForeignKeyViolation:
-                raise HTTPException(
-                    status_code=422,
-                    detail=f'Subscriber id= {loan_info.subscriber_id} is not registered.'
-                )
 
-            elif type(postgres_error) == CheckViolation:
+            if type(postgres_error) == CheckViolation:
                 raise HTTPException(
                     status_code=422,
                     detail='The max loan period is 1 month (loan_exp_date <= loan_date + 1 month)'
@@ -73,6 +77,12 @@ def add_loan(
         raise HTTPException(
             status_code=422,
             detail=f'Book id= {loan_info.book_id} was borrowed and has not been returned yet'
+        )
+    
+    elif not condition[2]: # Book not registered or not active
+        raise HTTPException(
+            status_code=422,
+            detail=f'Subscriber id= {loan_info.subscriber_id} is not registered or is not active.'
         )
 
 

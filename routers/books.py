@@ -75,9 +75,6 @@ def add_book(
     _ = Depends(get_librarian_session),
     session: Session = Depends(get_db_session)
 ):
-    # Removing leading spaces and double spaces between the words from book name
-    new_book.book_name = re.sub('\s+', ' ', new_book.book_name.strip()).capitalize()
-
     try:
         # Using raw SQL because the ORM was missbehaving due to a before insert database trigger.
         sql = text(f"INSERT INTO books(book_name, shelf_row_num, category_id, author_id)\

@@ -1,4 +1,6 @@
-from pydantic import BaseModel, Field
+import re
+
+from pydantic import BaseModel, Field, validator
 
 from .author import AuthorOut
 from models.views.all_books_info import AllBooksInfo
@@ -16,6 +18,10 @@ class BookOut(BaseModel):
     category: str = Field(..., max_length=20)
     author_info: AuthorOut = Field(...)
     location: BookLocation = Field(...)
+
+    @validator('book_name')
+    def parse_book_name(cls, name: str) -> str:
+        return re.sub('\s+', ' ', name.strip()).capitalize()
 
 
     @classmethod
